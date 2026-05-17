@@ -36,24 +36,34 @@ model ConceptNote {
   content     String   @db.Text
   domain      String
   examWeight  String
-  topicNumber Int?
+  topicNumber Int?      // Simply store the lesson number, no relation
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
-// Complete curriculum (45 topics for SAA-C03)
+// Main curriculum - 387 Maarek lessons
 model CurriculumTopic {
   id             String   @id @default(cuid())
-  topicNumber    Int      @unique
+  topicNumber    Int      @unique        // 1-387 (continuous)
   title          String
-  domain         String   // Foundation, Security, Resilient, Performance, Cost
-  subdomain      String?
-  keyServices    String[] // ["IAM", "S3"]
-  estimatedHours Int      @default(2)
-  examWeight     String   // High, Medium, Low, Prerequisite
+  domain         String                  // Foundation, Security, Resilient, Performance, Cost
+  subdomain      String?                 // Section name from course
+  keyServices    String[]                // AWS services covered
+  estimatedHours Float    @default(2)    // Can be fractional (e.g., 0.5 for short videos)
+  examWeight     String                  // High, Medium, Low, Prerequisite
+  
+  // Progress tracking
   isCompleted    Boolean  @default(false)
   completedAt    DateTime?
   studyMinutes   Int      @default(0)
+  
+  // Maarek course specific fields
+  description    String?  @db.Text       // What to expect from this lesson
+  duration       String?                 // Video length (HH:MM:SS)
+  lessonNumber   Int?     @unique        // Udemy lesson number (1-387)
+  sectionNumber  Int?                    // Udemy section number (1-33)
+  sectionName    String?                 // Udemy section name
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -61,14 +71,14 @@ model CurriculumTopic {
 // Projects you build
 model Project {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @unique
   description String   @db.Text
   status      String   // Planning, In Progress, Deployed, Documented
   liveUrl     String?
   githubUrl   String?
   screenshot  String?
-  awsServices String[] // ["S3", "CloudFront", "Lambda"]
-  topicNumbers Int[]   // Which topics this project proves
+  awsServices String[]
+  topicNumbers Int[]    // Changed from topicIds to topicNumbers (1-387)
   startedAt   DateTime?
   deployedAt  DateTime?
   createdAt   DateTime @default(now())

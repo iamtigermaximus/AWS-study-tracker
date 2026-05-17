@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Search, CheckCircle, Circle } from "lucide-react";
+import {
+  Search,
+  CheckCircle,
+  Circle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import Link from "next/link";
 
 interface Topic {
   id: string;
@@ -15,6 +22,8 @@ interface Topic {
   examWeight: string;
   isCompleted: boolean;
   studyMinutes: number;
+  duration?: string;
+  description?: string;
 }
 
 const Container = styled.div`
@@ -241,11 +250,12 @@ const ServiceTag = styled.span`
   color: #4b5563;
 `;
 
-const StudyLink = styled.a`
+const StudyLink = styled(Link)`
   font-size: 0.875rem;
   color: #3b82f6;
   cursor: pointer;
   text-decoration: none;
+  display: inline-block;
 
   &:hover {
     text-decoration: underline;
@@ -264,20 +274,81 @@ const LoadingSpinner = styled.div`
   color: #6b7280;
 `;
 
+// Pagination Components
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+  gap: 1rem;
+`;
+
+const PaginationInfo = styled.div`
+  font-size: 0.875rem;
+  color: #6b7280;
+`;
+
+const PaginationControls = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const PageButton = styled.button<{ $active?: boolean }>`
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  ${(props) =>
+    props.$active
+      ? `
+    background: #3b82f6;
+    color: white;
+  `
+      : `
+    background: white;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+    &:hover {
+      background: #f3f4f6;
+    }
+  `}
+`;
+
+const PageSizeSelect = styled.select`
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+`;
+
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
+
 export default function TopicsPage() {
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [allTopics, setAllTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDomain, setFilterDomain] = useState("");
   const [updating, setUpdating] = useState<number | null>(null);
 
-  // Define fetchTopics inside useEffect to avoid the warning
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
   useEffect(() => {
     const fetchTopics = async () => {
       try {
         const res = await fetch("/api/curriculum");
         const data = await res.json();
-        setTopics(data.topics);
+        setAllTopics(data.topics);
       } catch (error) {
         console.error("Failed to fetch topics:", error);
       } finally {
@@ -286,7 +357,7 @@ export default function TopicsPage() {
     };
 
     fetchTopics();
-  }, []); // Empty dependency array - runs once on mount
+  }, []);
 
   const toggleComplete = async (
     topicNumber: number,
@@ -300,10 +371,9 @@ export default function TopicsPage() {
         body: JSON.stringify({ topicNumber, completed: !currentStatus }),
       });
 
-      // Refresh topics after update
       const res = await fetch("/api/curriculum");
       const data = await res.json();
-      setTopics(data.topics);
+      setAllTopics(data.topics);
     } catch (error) {
       console.error("Failed to update topic:", error);
     } finally {
@@ -311,14 +381,33 @@ export default function TopicsPage() {
     }
   };
 
-  const domains = [...new Set(topics.map((t) => t.domain))];
-  const filteredTopics = topics.filter((t) => {
+  // Filter topics based on search and domain
+  const filteredTopics = allTopics.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase());
     const matchesDomain = !filterDomain || t.domain === filterDomain;
     return matchesSearch && matchesDomain;
   });
 
-  const completedCount = topics.filter((t) => t.isCompleted).length;
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTopics.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTopics = filteredTopics.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterDomain, itemsPerPage]);
+
+  const domains = [...new Set(allTopics.map((t) => t.domain))];
+  const completedCount = allTopics.filter((t) => t.isCompleted).length;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (loading) {
     return (
@@ -333,10 +422,10 @@ export default function TopicsPage() {
       <Header>
         <div>
           <Title>Curriculum</Title>
-          <Subtitle>45 topics covering SAA-C03 exam</Subtitle>
+          <Subtitle>{allTopics.length} lessons covering SAA-C03 exam</Subtitle>
         </div>
         <StatsBadge>
-          <strong>{completedCount}</strong>/{topics.length} completed
+          <strong>{completedCount}</strong>/{allTopics.length} completed
         </StatsBadge>
       </Header>
 
@@ -354,7 +443,7 @@ export default function TopicsPage() {
               }}
             />
             <SearchInput
-              placeholder="Search topics..."
+              placeholder="Search lessons..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -374,7 +463,7 @@ export default function TopicsPage() {
       </SearchContainer>
 
       <TopicsList>
-        {filteredTopics.map((topic) => (
+        {paginatedTopics.map((topic) => (
           <TopicCard key={topic.id} $completed={topic.isCompleted}>
             <TopicRow>
               <CheckboxButton
@@ -401,23 +490,42 @@ export default function TopicsPage() {
                       {topic.examWeight} weight
                     </WeightBadge>
                   )}
-                  <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>
-                    {topic.estimatedHours}h
-                  </span>
+                  {topic.duration && (
+                    <span style={{ fontSize: "0.7rem", color: "#6b7280" }}>
+                      {topic.duration}
+                    </span>
+                  )}
                 </TopicMeta>
 
                 <TopicTitle>{topic.title}</TopicTitle>
 
-                {topic.keyServices.length > 0 && (
+                {topic.keyServices && topic.keyServices.length > 0 && (
                   <ServiceTags>
-                    {topic.keyServices.map((service) => (
+                    {topic.keyServices.slice(0, 3).map((service) => (
                       <ServiceTag key={service}>{service}</ServiceTag>
                     ))}
+                    {topic.keyServices.length > 3 && (
+                      <ServiceTag>+{topic.keyServices.length - 3}</ServiceTag>
+                    )}
                   </ServiceTags>
                 )}
 
+                {topic.description && (
+                  <p
+                    style={{
+                      fontSize: "0.8rem",
+                      color: "#6b7280",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    {topic.description.length > 100
+                      ? `${topic.description.substring(0, 100)}...`
+                      : topic.description}
+                  </p>
+                )}
+
                 <StudyLink href={`/topics/${topic.topicNumber}`}>
-                  Study Resources →
+                  View Lesson →
                 </StudyLink>
               </TopicContent>
 
@@ -431,6 +539,70 @@ export default function TopicsPage() {
           </TopicCard>
         ))}
       </TopicsList>
+
+      {/* Pagination Controls */}
+      {filteredTopics.length > 0 && (
+        <PaginationContainer>
+          <PaginationInfo>
+            Showing {startIndex + 1} to{" "}
+            {Math.min(startIndex + itemsPerPage, filteredTopics.length)} of{" "}
+            {filteredTopics.length} lessons
+          </PaginationInfo>
+
+          <PaginationControls>
+            <PageSizeSelect
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            >
+              {ITEMS_PER_PAGE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  Show {size}
+                </option>
+              ))}
+            </PageSizeSelect>
+
+            <PageButton
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              <ChevronLeft size={16} />
+            </PageButton>
+
+            {/* Page numbers - show limited range for mobile */}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+
+              return (
+                <PageButton
+                  key={pageNum}
+                  $active={currentPage === pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                >
+                  {pageNum}
+                </PageButton>
+              );
+            })}
+
+            <PageButton
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+            >
+              <ChevronRight size={16} />
+            </PageButton>
+          </PaginationControls>
+        </PaginationContainer>
+      )}
     </Container>
   );
 }

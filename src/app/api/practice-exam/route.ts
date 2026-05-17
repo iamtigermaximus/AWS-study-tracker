@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+interface PracticeExamInput {
+  score: number;
+  source: string;
+  questionCount: number;
+  notes?: string;
+}
+
 export async function GET() {
   try {
     const exams = await prisma.practiceExam.findMany({
@@ -14,7 +21,7 @@ export async function GET() {
 
     return NextResponse.json({ exams, avgScore });
   } catch (error) {
-    console.error("GET /api/practice-exam error:", error);
+    console.error("Failed to fetch practice exams:", error);
     return NextResponse.json(
       { error: "Failed to fetch practice exams" },
       { status: 500 },
@@ -24,7 +31,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: PracticeExamInput = await request.json();
     const { score, source, questionCount, notes } = body;
 
     const exam = await prisma.practiceExam.create({
@@ -33,7 +40,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(exam, { status: 201 });
   } catch (error) {
-    console.error("POST /api/practice-exam error:", error);
+    console.error("Failed to save practice exam:", error);
     return NextResponse.json(
       { error: "Failed to save practice exam" },
       { status: 500 },

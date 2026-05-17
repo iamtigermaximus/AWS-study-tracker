@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+interface CurriculumUpdateInput {
+  topicNumber: number;
+  completed: boolean;
+  studyMinutes?: number;
+}
+
 export async function GET() {
   try {
     const topics = await prisma.curriculumTopic.findMany({
@@ -17,7 +23,7 @@ export async function GET() {
       total: topics.length,
     });
   } catch (error) {
-    console.error("GET /api/curriculum error:", error);
+    console.error("Failed to fetch curriculum:", error);
     return NextResponse.json(
       { error: "Failed to fetch curriculum" },
       { status: 500 },
@@ -27,11 +33,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: CurriculumUpdateInput = await request.json();
     const { topicNumber, completed, studyMinutes } = body;
 
     const topic = await prisma.curriculumTopic.update({
-      where: { topicNumber: topicNumber },
+      where: { topicNumber },
       data: {
         isCompleted: completed,
         completedAt: completed ? new Date() : null,
@@ -41,7 +47,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(topic);
   } catch (error) {
-    console.error("POST /api/curriculum error:", error);
+    console.error("Failed to update topic:", error);
     return NextResponse.json(
       { error: "Failed to update topic" },
       { status: 500 },
