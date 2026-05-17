@@ -13,9 +13,18 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get("domain");
+    const topicNumber = searchParams.get("topicNumber");
+
+    const where: {
+      domain?: string;
+      topicNumber?: number;
+    } = {};
+
+    if (domain) where.domain = domain;
+    if (topicNumber) where.topicNumber = parseInt(topicNumber);
 
     const notes = await prisma.conceptNote.findMany({
-      where: domain ? { domain: domain } : {},
+      where,
       orderBy: { updatedAt: "desc" },
     });
 
