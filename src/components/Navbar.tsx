@@ -12,6 +12,7 @@ import {
   Target,
   Menu,
   X,
+  FlaskConical,
 } from "lucide-react";
 
 const NavContainer = styled.nav`
@@ -148,6 +149,7 @@ const MobileNavLink = styled(Link)<{ $active: boolean }>`
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/topics", label: "Topics", icon: BookOpen },
+  { href: "/labs", label: "Labs", icon: FlaskConical },
   { href: "/projects", label: "Projects", icon: FolderGit2 },
   { href: "/notes", label: "Notes", icon: FileText },
   { href: "/practice", label: "Practice", icon: Target },

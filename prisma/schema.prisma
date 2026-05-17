@@ -92,3 +92,29 @@ model StudyStreak {
   minutes   Int
   completed Boolean  @default(true)
 }
+
+// Hands-on labs for each section (33 labs)
+model SectionLab {
+  id             String   @id @default(cuid())
+  sectionNumber  Int      @unique
+  title          String
+  description    String   @db.Text
+  requirements   String?  @db.Text
+  instructions   String?  @db.Text
+  deliverables   String[] // screenshot, liveUrl, githubUrl, notes
+  estimatedTime  String
+  difficulty     String   // Beginner, Intermediate, Advanced
+  
+  // Progress tracking
+  status         String   @default("Not Started") // Not Started, In Progress, Completed
+  completedAt    DateTime?
+  
+  // Proof of work
+  screenshotUrl  String?
+  liveUrl        String?
+  githubUrl      String?
+  notes          String?  @db.Text
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
