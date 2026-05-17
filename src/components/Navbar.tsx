@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   FlaskConical,
+  GraduationCap,
 } from "lucide-react";
 
 const NavContainer = styled.nav`
@@ -41,16 +42,17 @@ const NavWrapper = styled.div`
   }
 `;
 
-const Logo = styled.div`
-  font-size: 1.125rem;
+const Logo = styled(Link)`
+  font-size: 1rem;
   font-weight: 700;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
+  text-decoration: none;
 
   @media (min-width: 768px) {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
   }
 `;
 
@@ -152,6 +154,7 @@ const navItems = [
   { href: "/labs", label: "Labs", icon: FlaskConical },
   { href: "/projects", label: "Projects", icon: FolderGit2 },
   { href: "/notes", label: "Notes", icon: FileText },
+  { href: "/courses", label: "Courses", icon: GraduationCap },
   { href: "/practice", label: "Practice", icon: Target },
 ];
 
@@ -164,7 +167,7 @@ export default function Navbar() {
   return (
     <NavContainer>
       <NavWrapper>
-        <Logo>AWS SAA Tracker</Logo>
+        <Logo href="/">Learning Tracker</Logo>
 
         {/* Desktop Navigation */}
         <DesktopNavList>

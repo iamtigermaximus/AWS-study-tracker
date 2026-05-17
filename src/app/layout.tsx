@@ -7,8 +7,9 @@ import Navbar from "@/components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AWS SAA Tracker",
-  description: "Track your AWS Solutions Architect Associate exam preparation",
+  title: "Learning Tracker | AWS Solutions Architect",
+  description:
+    "Track AWS Solutions Architect certification progress, hands-on projects, and multi-cloud learning journey",
 };
 
 export default function RootLayout({

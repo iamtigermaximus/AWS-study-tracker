@@ -118,3 +118,18 @@ model SectionLab {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+
+model ShortCourse {
+  id            String    @id @default(cuid())
+  title         String
+  provider      String?
+  type          String?   // certification, short-course, workshop
+  status        String?   @default("Completed") // Only track completed ones
+  certificateUrl String?
+  credentialId  String?
+  notes         String?   @db.Text
+  tags          String[]
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
