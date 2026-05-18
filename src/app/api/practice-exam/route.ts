@@ -5,6 +5,7 @@ interface PracticeExamInput {
   score: number;
   source: string;
   questionCount: number;
+  domainScores?: Record<string, number>;
   notes?: string;
 }
 
@@ -12,6 +13,7 @@ export async function GET() {
   try {
     const exams = await prisma.practiceExam.findMany({
       orderBy: { date: "desc" },
+      take: 20,
     });
 
     const avgScore =
@@ -19,7 +21,18 @@ export async function GET() {
         ? exams.reduce((sum, e) => sum + e.score, 0) / exams.length
         : 0;
 
-    return NextResponse.json({ exams, avgScore });
+    const aiExams = exams.filter((e) => e.source === "AI-Generated");
+    const aiAvgScore =
+      aiExams.length > 0
+        ? aiExams.reduce((sum, e) => sum + e.score, 0) / aiExams.length
+        : 0;
+
+    return NextResponse.json({
+      exams,
+      avgScore,
+      aiAvgScore,
+      totalExams: exams.length,
+    });
   } catch (error) {
     console.error("Failed to fetch practice exams:", error);
     return NextResponse.json(
@@ -32,10 +45,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body: PracticeExamInput = await request.json();
-    const { score, source, questionCount, notes } = body;
+    const { score, source, questionCount, domainScores, notes } = body;
 
     const exam = await prisma.practiceExam.create({
-      data: { score, source, questionCount, notes },
+      data: {
+        score,
+        source,
+        questionCount,
+        notes,
+        domainScores: domainScores || {},
+      },
     });
 
     return NextResponse.json(exam, { status: 201 });
