@@ -18,6 +18,7 @@ import {
   Sparkles,
   Save,
   X,
+  AlertCircle,
 } from "lucide-react";
 
 interface Certification {
@@ -258,7 +259,6 @@ const AILoadingMessage = styled.div`
   gap: 0.5rem;
 `;
 
-// Beautiful styled notes viewer
 const NotesViewer = styled.div`
   background: linear-gradient(135deg, #0f172a, #1e293b);
   border-radius: 1rem;
@@ -402,6 +402,76 @@ const EmptyNotesMessage = styled.div`
   font-style: italic;
 `;
 
+// Modal Components
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+`;
+
+const ModalTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+`;
+
+const ModalMessage = styled.p`
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+`;
+
+const ModalButton = styled.button<{ $variant?: "danger" | "outline" }>`
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  ${(props) => {
+    switch (props.$variant) {
+      case "danger":
+        return `
+          background: #dc2626;
+          color: white;
+          border: none;
+          &:hover { background: #b91c1c; }
+        `;
+      default:
+        return `
+          background: #f3f4f6;
+          color: #4b5563;
+          border: none;
+          &:hover { background: #e5e7eb; }
+        `;
+    }
+  }}
+`;
+
 const LoadingSpinner = styled.div`
   text-align: center;
   padding: 2rem;
@@ -418,6 +488,7 @@ export default function CourseDetailPage() {
   const [notesContent, setNotesContent] = useState("");
   const [aiGenerating, setAiGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchCert();
@@ -437,13 +508,18 @@ export default function CourseDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this certification?")) return;
-
+    setShowDeleteModal(false);
     try {
-      await fetch(`/api/courses/${id}`, { method: "DELETE" });
-      router.push("/courses");
+      const res = await fetch(`/api/courses/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.push("/courses");
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to delete certification");
+      }
     } catch (error) {
       console.error("Failed to delete certification:", error);
+      alert("Failed to delete certification. Please try again.");
     }
   };
 
@@ -555,6 +631,7 @@ export default function CourseDetailPage() {
                 href={cert.certificateUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
               >
                 View Certificate <ExternalLink size={14} />
               </LinkButton>
@@ -594,7 +671,6 @@ export default function CourseDetailPage() {
           </DetailSection>
         )}
 
-        {/* Edit/Delete Buttons */}
         <ButtonGroup>
           <Button
             $variant="primary"
@@ -602,13 +678,12 @@ export default function CourseDetailPage() {
           >
             <Edit3 size={16} /> Edit Certification
           </Button>
-          <Button $variant="danger" onClick={handleDelete}>
+          <Button $variant="danger" onClick={() => setShowDeleteModal(true)}>
             <Trash2 size={16} /> Delete Certification
           </Button>
         </ButtonGroup>
       </Card>
 
-      {/* Notes Section - At the Bottom */}
       <NotesSection>
         <NotesHeader>
           <NotesTitle>
@@ -627,7 +702,6 @@ export default function CourseDetailPage() {
         </NotesHeader>
 
         {!isEditing ? (
-          // VIEW MODE - Beautiful formatted notes
           <>
             {cert.notes ? (
               <NotesViewer>
@@ -648,7 +722,6 @@ export default function CourseDetailPage() {
             )}
           </>
         ) : (
-          // EDIT MODE - Textarea for editing
           <div>
             {aiGenerating && (
               <AILoadingMessage>
@@ -686,6 +759,35 @@ export default function CourseDetailPage() {
           </div>
         )}
       </NotesSection>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <AlertCircle
+              size={48}
+              color="#dc2626"
+              style={{ margin: "0 auto 1rem" }}
+            />
+            <ModalTitle>Delete Certification?</ModalTitle>
+            <ModalMessage>
+              Are you sure you want to delete "{cert.title}"? This action cannot
+              be undone.
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton
+                $variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </ModalButton>
+              <ModalButton $variant="danger" onClick={handleDelete}>
+                Delete
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 }

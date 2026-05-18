@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Trash2,
   Edit3,
+  AlertCircle,
 } from "lucide-react";
 
 interface Certification {
@@ -208,7 +209,6 @@ const CredentialId = styled.div`
   margin-top: 0.25rem;
 `;
 
-// Truncated notes preview - max 100 characters
 const NotesPreview = styled.div`
   margin-top: 0.75rem;
   padding: 0.5rem;
@@ -262,7 +262,77 @@ const IconButton = styled.button`
   }
 `;
 
-// Modal Components (same as before)
+// Delete Modal Components
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+`;
+
+const DeleteModalContent = styled.div`
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+`;
+
+const DeleteModalTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+`;
+
+const DeleteModalMessage = styled.p`
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+`;
+
+const DeleteModalButtons = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+`;
+
+const DeleteModalButton = styled.button<{ $variant?: "danger" | "outline" }>`
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  ${(props) => {
+    switch (props.$variant) {
+      case "danger":
+        return `
+          background: #dc2626;
+          color: white;
+          border: none;
+          &:hover { background: #b91c1c; }
+        `;
+      default:
+        return `
+          background: #f3f4f6;
+          color: #4b5563;
+          border: none;
+          &:hover { background: #e5e7eb; }
+        `;
+    }
+  }}
+`;
+
+// Add/Edit Modal Components
 const Modal = styled.div`
   position: fixed;
   top: 0;
@@ -389,7 +459,6 @@ const EmptyState = styled.div`
   border-radius: 0.75rem;
 `;
 
-// Helper function to truncate notes
 const truncateNotes = (notes: string | null, maxLength: number = 100) => {
   if (!notes) return null;
   if (notes.length <= maxLength) return notes;
@@ -400,6 +469,9 @@ export default function CoursesPage() {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetTitle, setDeleteTargetTitle] = useState<string>("");
   const [editingCert, setEditingCert] = useState<Certification | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -474,16 +546,17 @@ export default function CoursesPage() {
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this certification?")) return;
-
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
     try {
-      await fetch(`/api/courses/${id}`, { method: "DELETE" });
+      await fetch(`/api/courses/${deleteTargetId}`, { method: "DELETE" });
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
+      setDeleteTargetTitle("");
       fetchCertifications();
     } catch (error) {
       console.error("Failed to delete certification:", error);
+      alert("Failed to delete certification. Please try again.");
     }
   };
 
@@ -504,6 +577,14 @@ export default function CoursesPage() {
       tags: cert.tags.join(", "),
     });
     setShowModal(true);
+  };
+
+  const openDeleteModal = (id: string, title: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteTargetId(id);
+    setDeleteTargetTitle(title);
+    setShowDeleteModal(true);
   };
 
   if (loading) {
@@ -583,7 +664,6 @@ export default function CoursesPage() {
               <CredentialId>ID: {cert.credentialId}</CredentialId>
             )}
 
-            {/* Truncated notes preview - max 2 lines */}
             {cert.notes && (
               <NotesPreview>{truncateNotes(cert.notes, 100)}</NotesPreview>
             )}
@@ -600,7 +680,9 @@ export default function CoursesPage() {
               <IconButton onClick={(e) => handleEdit(cert, e)}>
                 <Edit3 size={14} />
               </IconButton>
-              <IconButton onClick={(e) => handleDelete(cert.id, e)}>
+              <IconButton
+                onClick={(e) => openDeleteModal(cert.id, cert.title, e)}
+              >
                 <Trash2 size={14} />
               </IconButton>
             </CardActions>
@@ -733,6 +815,35 @@ export default function CoursesPage() {
             </form>
           </ModalContent>
         </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <ModalOverlay onClick={() => setShowDeleteModal(false)}>
+          <DeleteModalContent onClick={(e) => e.stopPropagation()}>
+            <AlertCircle
+              size={48}
+              color="#dc2626"
+              style={{ margin: "0 auto 1rem" }}
+            />
+            <DeleteModalTitle>Delete Certification?</DeleteModalTitle>
+            <DeleteModalMessage>
+              Are you sure you want to delete "{deleteTargetTitle}"? This action
+              cannot be undone.
+            </DeleteModalMessage>
+            <DeleteModalButtons>
+              <DeleteModalButton
+                $variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </DeleteModalButton>
+              <DeleteModalButton $variant="danger" onClick={handleDelete}>
+                Delete
+              </DeleteModalButton>
+            </DeleteModalButtons>
+          </DeleteModalContent>
+        </ModalOverlay>
       )}
     </Container>
   );

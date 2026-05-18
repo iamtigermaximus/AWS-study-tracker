@@ -59,6 +59,7 @@ The cheatsheet must include:
 1. A "Key Terms & Concepts to Remember" section with important vocabulary and their brief definitions
 2. Detailed explanations of the most important concepts with analogies and examples
 3. Explain to me like i'm 12 years old. Use simple language and relatable analogies.
+4. Make a conclusion and summary of the most important points in the ended.
 Structure your response EXACTLY like this:
 
 # [Certification Name] - Study Notes
