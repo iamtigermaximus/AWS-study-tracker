@@ -25,11 +25,9 @@ model PracticeExam {
   score         Int
   source        String
   questionCount Int      @default(10)
-  domainScores  Json?    
   notes         String?
   createdAt     DateTime @default(now())
 }
-
 // Your concept notes (written by you)
 model ConceptNote {
   id          String   @id @default(cuid())
