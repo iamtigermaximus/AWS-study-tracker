@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -42,14 +43,25 @@ const NavWrapper = styled.div`
   }
 `;
 
-const Logo = styled(Link)`
+const LogoContainer = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+`;
+
+const LogoImage = styled(Image)`
+  object-fit: contain;
+  border-radius: 8px;
+`;
+
+const LogoText = styled.span`
   font-size: 1rem;
   font-weight: 700;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
-  text-decoration: none;
 
   @media (min-width: 768px) {
     font-size: 1.125rem;
@@ -167,9 +179,17 @@ export default function Navbar() {
   return (
     <NavContainer>
       <NavWrapper>
-        <Logo href="/">Learning Tracker</Logo>
+        <LogoContainer href="/">
+          <LogoImage
+            src="/owl-logo.jpg"
+            alt="Owl Logo"
+            width={30}
+            height={30}
+            priority
+          />
+          <LogoText>Learning Tracker</LogoText>
+        </LogoContainer>
 
-        {/* Desktop Navigation */}
         <DesktopNavList>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -183,7 +203,6 @@ export default function Navbar() {
           })}
         </DesktopNavList>
 
-        {/* Mobile Menu Button */}
         <MobileMenuButton
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
@@ -191,7 +210,6 @@ export default function Navbar() {
         </MobileMenuButton>
       </NavWrapper>
 
-      {/* Mobile Navigation Dropdown */}
       <MobileNavList $isOpen={isMobileMenuOpen}>
         {navItems.map((item) => {
           const Icon = item.icon;
