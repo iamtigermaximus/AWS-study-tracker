@@ -9,7 +9,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Learning Tracker | Track Your Certification Journey",
   description:
-    "Track your learning progress across multiple courses, certifications, and hands-on projects. AWS, Python, Kubernetes, and more.",
+    "Track your learning progress across multiple courses, certifications, and hands-on projects.",
+  manifest: "/site.webmanifest",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -18,20 +19,15 @@ export const metadata: Metadata = {
       { url: "/favicon.png", sizes: "any", type: "image/png" },
     ],
     apple: [
-      { url: "/apple-icon-57x57.png", sizes: "57x57", type: "image/png" },
-      { url: "/apple-icon-72x72.png", sizes: "72x72", type: "image/png" },
-      { url: "/apple-icon-114x114.png", sizes: "114x114", type: "image/png" },
-      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
-  manifest: "/site.webmanifest",
-  keywords:
-    "learning tracker, certification tracker, AWS, Python, Kubernetes, study tracker",
-  authors: [{ name: "Learning Tracker" }],
-  openGraph: {
-    title: "Learning Tracker",
-    description: "Track your certification learning journey",
-    type: "website",
+  other: {
+    "theme-color": "#3b82f6",
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "LearnTrack",
   },
 };
 
@@ -43,7 +39,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Add links directly - this ensures they work */}
         <link
           rel="icon"
           type="image/png"
@@ -64,22 +59,12 @@ export default function RootLayout({
         />
         <link
           rel="apple-touch-icon"
-          sizes="57x57"
-          href="/apple-icon-57x57.png"
+          sizes="180x180"
+          href="/apple-touch-icon.png"
         />
-        <link
-          rel="apple-touch-icon"
-          sizes="72x72"
-          href="/apple-icon-72x72.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="114x114"
-          href="/apple-icon-114x114.png"
-        />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#3b82f6" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={inter.className}>
         <StyledComponentsRegistry>
