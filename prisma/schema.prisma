@@ -72,10 +72,15 @@ model TopicNote {
   courseId    String
   title       String
   content     String   @db.Text
+  topicNumber Int      // Required - links to CurriculumTopic
+  domain      String   // For filtering
+  examWeight  String   // High, Medium, Low
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([courseId])
+  @@index([topicNumber])
+  @@map("topic_notes")
 }
 // Projects you build
 model Project {

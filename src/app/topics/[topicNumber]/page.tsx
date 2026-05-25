@@ -35,13 +35,14 @@ interface Topic {
   sectionName: string;
 }
 
-interface ConceptNote {
+interface TopicNote {
   id: string;
   title: string;
   content: string;
   domain: string;
   examWeight: string;
   topicNumber: number;
+  courseId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -262,6 +263,8 @@ const CompleteButton = styled.button<{ $completed: boolean }>`
   background: ${(props) => (props.$completed ? "#22c55e" : "#3b82f6")};
   color: white;
   transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
 
   &:hover {
     background: ${(props) => (props.$completed ? "#16a34a" : "#2563eb")};
@@ -359,6 +362,7 @@ const SmallButton = styled.button<{
   gap: 0.25rem;
   transition: all 0.2s ease;
   cursor: pointer;
+  border: none;
 
   ${(props) => {
     switch (props.$variant) {
@@ -403,6 +407,7 @@ const AIButton = styled.button<{ $loading?: boolean }>`
   transition: all 0.2s ease;
   opacity: ${(props) => (props.$loading ? 0.7 : 1)};
   cursor: pointer;
+  border: none;
 
   &:hover {
     transform: translateY(-1px);
@@ -467,6 +472,7 @@ const ModalButton = styled.button<{ $variant?: "danger" | "outline" }>`
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
+  border: none;
 
   ${(props) => {
     if (props.$variant === "danger") {
@@ -511,11 +517,11 @@ export default function TopicDetailPage() {
   const [topic, setTopic] = useState<Topic | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [notes, setNotes] = useState<ConceptNote[]>([]);
+  const [notes, setNotes] = useState<TopicNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteContent, setNoteContent] = useState("");
-  const [editingNote, setEditingNote] = useState<ConceptNote | null>(null);
+  const [editingNote, setEditingNote] = useState<TopicNote | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -536,14 +542,14 @@ export default function TopicDetailPage() {
     }
   };
 
+  // Fetch TopicNotes (not ConceptNotes)
   const fetchNotes = async () => {
     try {
-      const res = await fetch("/api/concept-note");
+      setNotesLoading(true);
+      const res = await fetch(`/api/topic-notes?topicNumber=${topicNumber}`);
+      if (!res.ok) throw new Error("Failed to fetch notes");
       const data = await res.json();
-      const topicNotes = data.filter(
-        (note: ConceptNote) => note.topicNumber === topicNumber,
-      );
-      setNotes(topicNotes);
+      setNotes(data);
     } catch (error) {
       console.error("Failed to fetch notes:", error);
       setError("Failed to load notes");
@@ -579,8 +585,8 @@ export default function TopicDetailPage() {
     setError(null);
     try {
       const url = editingNote
-        ? `/api/concept-note/${editingNote.id}`
-        : "/api/concept-note";
+        ? `/api/topic-notes/${editingNote.id}`
+        : "/api/topic-notes";
       const method = editingNote ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -592,6 +598,7 @@ export default function TopicDetailPage() {
           domain: topic.domain,
           examWeight: topic.examWeight,
           topicNumber: topic.topicNumber,
+          courseId: "maarek-saa", // or whatever your course identifier is
         }),
       });
 
@@ -612,17 +619,13 @@ export default function TopicDetailPage() {
   const deleteNote = async (noteId: string) => {
     setError(null);
     try {
-      console.log("Deleting note:", noteId);
-      const res = await fetch(`/api/concept-note/${noteId}`, {
+      const res = await fetch(`/api/topic-notes/${noteId}`, {
         method: "DELETE",
       });
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-
-      const data = await res.json();
-      console.log("Delete response:", data);
 
       setDeleteConfirm(null);
       await fetchNotes();
@@ -797,10 +800,10 @@ export default function TopicDetailPage() {
           </CompleteButton>
         </Card>
 
-        {/* Right Column - Notes & AI */}
+        {/* Right Column - Topic Notes */}
         <Card>
           <SectionTitle>
-            <FileText size={18} /> My Notes
+            <FileText size={18} /> My Notes for This Topic
           </SectionTitle>
 
           {notesLoading ? (
@@ -847,10 +850,7 @@ export default function TopicDetailPage() {
                       </SmallButton>
                       <SmallButton
                         $variant="danger"
-                        onClick={() => {
-                          console.log("Delete clicked for note:", note.id);
-                          setDeleteConfirm(note.id);
-                        }}
+                        onClick={() => setDeleteConfirm(note.id)}
                       >
                         <Trash2 size={12} /> Delete
                       </SmallButton>
