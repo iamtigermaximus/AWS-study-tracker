@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import {
   Target,
@@ -9,6 +9,9 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  BookOpen,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 interface Question {
@@ -26,6 +29,14 @@ interface DomainScore {
   domain: string;
   correct: number;
   total: number;
+}
+
+interface Course {
+  id: string;
+  title: string;
+  provider: string | null;
+  type: string | null;
+  tags: string[];
 }
 
 const Container = styled.div`
@@ -68,27 +79,25 @@ const SettingsCard = styled.div`
 `;
 
 const SettingsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   align-items: flex-end;
 `;
 
 const SettingGroup = styled.div`
-  flex: 1;
-  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 `;
 
 const Label = styled.label`
-  display: block;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #6b7280;
-  margin-bottom: 0.25rem;
 `;
 
 const Select = styled.select`
-  width: 100%;
   padding: 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
@@ -102,24 +111,43 @@ const Select = styled.select`
   }
 `;
 
+const Input = styled.input`
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+`;
+
 const GenerateButton = styled.button`
   padding: 0.5rem 1rem;
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
   height: 38px;
 
   &:hover {
-    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
   }
 
   &:disabled {
     background: #9ca3af;
     cursor: not-allowed;
+    transform: none;
   }
 `;
 
@@ -215,6 +243,7 @@ const Scenario = styled.p`
   color: #4b5563;
   margin-bottom: 1rem;
   line-height: 1.5;
+  font-style: italic;
 `;
 
 const QuestionText = styled.p`
@@ -274,6 +303,7 @@ const RadioInput = styled.input`
 const OptionText = styled.span`
   font-size: 0.875rem;
   color: #4b5563;
+  flex: 1;
 `;
 
 const Explanation = styled.div`
@@ -331,7 +361,7 @@ const SubmitButton = styled.button`
   color: white;
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 1rem;
@@ -339,6 +369,11 @@ const SubmitButton = styled.button`
 
   &:hover {
     background: #16a34a;
+  }
+
+  &:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
   }
 `;
 
@@ -405,7 +440,8 @@ const RetakeButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
+  margin: 1rem auto 0;
+  border: none;
 
   &:hover {
     background: #2563eb;
@@ -418,6 +454,30 @@ const LoadingSpinner = styled.div`
   color: #6b7280;
 `;
 
+const ModeSelector = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+`;
+
+const ModeButton = styled.button<{ $active: boolean }>`
+  padding: 0.5rem 1rem;
+  background: ${(props) => (props.$active ? "#3b82f6" : "#f3f4f6")};
+  color: ${(props) => (props.$active ? "white" : "#4b5563")};
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+
+  &:hover {
+    background: ${(props) => (props.$active ? "#2563eb" : "#e5e7eb")};
+  }
+`;
+
 export default function PracticePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -427,11 +487,40 @@ export default function PracticePage() {
   const [score, setScore] = useState(0);
   const [domainScores, setDomainScores] = useState<DomainScore[]>([]);
 
+  // Test mode
+  const [testMode, setTestMode] = useState<"aws" | "course">("aws");
+
+  // Course selection
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
   const [settings, setSettings] = useState({
     questionCount: 10,
     domain: "All",
     difficulty: "Medium",
+    specificTopic: "",
   });
+
+  // Fetch courses on mount
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch("/api/courses");
+      const data = await res.json();
+      setAvailableCourses(data);
+      if (data.length > 0) {
+        setSelectedCourseId(data[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to fetch courses:", error);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
 
   const generateTest = async () => {
     setLoading(true);
@@ -440,15 +529,44 @@ export default function PracticePage() {
     setCurrentIndex(0);
 
     try {
-      const res = await fetch("/api/ai/practice-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
+      let res;
+
+      if (testMode === "aws") {
+        // Use AWS SAA route
+        res = await fetch("/api/ai/practice-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionCount: settings.questionCount,
+            domain: settings.domain,
+            difficulty: settings.difficulty,
+          }),
+        });
+      } else {
+        // Use course test route
+        if (!selectedCourseId) {
+          alert("Please select a course");
+          setLoading(false);
+          return;
+        }
+
+        res = await fetch("/api/ai/course-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseId: selectedCourseId,
+            questionCount: settings.questionCount,
+            difficulty: settings.difficulty,
+            specificTopic: settings.specificTopic,
+          }),
+        });
+      }
+
       const data = await res.json();
-      setQuestions(data.questions);
+      setQuestions(data.questions || []);
     } catch (error) {
       console.error("Failed to generate test:", error);
+      alert("Failed to generate test. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -488,12 +606,10 @@ export default function PracticePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           score: totalScore,
-          source: "AI-Generated",
+          source: testMode === "aws" ? "AWS SAA-C03" : "Course Test",
           questionCount: questions.length,
-          domainScores: domainStats.reduce(
-            (acc, d) => ({ ...acc, [d.domain]: (d.correct / d.total) * 100 }),
-            {},
-          ),
+          notes:
+            testMode === "course" ? `Course ID: ${selectedCourseId}` : null,
         }),
       });
     } catch (error) {
@@ -515,18 +631,94 @@ export default function PracticePage() {
     if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1);
   };
 
+  const resetTest = () => {
+    setQuestions([]);
+    setAnswers({});
+    setSubmitted(false);
+    setCurrentIndex(0);
+    setScore(0);
+    setDomainScores([]);
+  };
+
   const currentQuestion = questions[currentIndex];
   const userAnswer = currentQuestion ? answers[currentQuestion.id] : null;
-  const isCorrect = submitted && userAnswer === currentQuestion?.correctAnswer;
 
   return (
     <Container>
       <Title>Practice Tests</Title>
-      <Subtitle>AI-generated SAA-C03 style questions</Subtitle>
+      <Subtitle>Test your knowledge with AI-generated questions</Subtitle>
 
       {questions.length === 0 && !loading ? (
         <SettingsCard>
+          <ModeSelector>
+            <ModeButton
+              $active={testMode === "aws"}
+              onClick={() => setTestMode("aws")}
+            >
+              🎯 AWS SAA-C03 Exam
+            </ModeButton>
+            <ModeButton
+              $active={testMode === "course"}
+              onClick={() => setTestMode("course")}
+            >
+              📚 My Courses
+            </ModeButton>
+          </ModeSelector>
+
           <SettingsRow>
+            {testMode === "course" && (
+              <SettingGroup>
+                <Label>Select Course</Label>
+                {loadingCourses ? (
+                  <LoadingSpinner>Loading courses...</LoadingSpinner>
+                ) : (
+                  <Select
+                    value={selectedCourseId}
+                    onChange={(e) => setSelectedCourseId(e.target.value)}
+                  >
+                    {availableCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.title}{" "}
+                        {course.type === "certification" ? "🎓" : "📘"}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </SettingGroup>
+            )}
+
+            {testMode === "course" && (
+              <SettingGroup>
+                <Label>Specific Topic (Optional)</Label>
+                <Input
+                  type="text"
+                  placeholder="e.g., React Hooks, S3 Buckets"
+                  value={settings.specificTopic}
+                  onChange={(e) =>
+                    setSettings({ ...settings, specificTopic: e.target.value })
+                  }
+                />
+              </SettingGroup>
+            )}
+
+            {testMode === "aws" && (
+              <SettingGroup>
+                <Label>Domain</Label>
+                <Select
+                  value={settings.domain}
+                  onChange={(e) =>
+                    setSettings({ ...settings, domain: e.target.value })
+                  }
+                >
+                  <option value="All">All Domains</option>
+                  <option value="Security">Security (30%)</option>
+                  <option value="Resilient">Resilient (26%)</option>
+                  <option value="Performance">Performance (24%)</option>
+                  <option value="Cost">Cost (20%)</option>
+                </Select>
+              </SettingGroup>
+            )}
+
             <SettingGroup>
               <Label>Number of Questions</Label>
               <Select
@@ -546,22 +738,6 @@ export default function PracticePage() {
             </SettingGroup>
 
             <SettingGroup>
-              <Label>Domain</Label>
-              <Select
-                value={settings.domain}
-                onChange={(e) =>
-                  setSettings({ ...settings, domain: e.target.value })
-                }
-              >
-                <option value="All">All Domains</option>
-                <option value="Security">Security (30%)</option>
-                <option value="Resilient">Resilient (26%)</option>
-                <option value="Performance">Performance (24%)</option>
-                <option value="Cost">Cost (20%)</option>
-              </Select>
-            </SettingGroup>
-
-            <SettingGroup>
               <Label>Difficulty</Label>
               <Select
                 value={settings.difficulty}
@@ -575,22 +751,38 @@ export default function PracticePage() {
               </Select>
             </SettingGroup>
 
-            <GenerateButton onClick={generateTest}>
-              <Target size={16} style={{ marginRight: "0.5rem" }} />
-              Generate Test
+            <GenerateButton onClick={generateTest} disabled={loading}>
+              {loading ? (
+                <Loader2
+                  size={16}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
+              ) : (
+                <Target size={16} />
+              )}
+              {loading ? "Generating..." : "Generate Test"}
             </GenerateButton>
           </SettingsRow>
         </SettingsCard>
       ) : loading ? (
-        <LoadingSpinner>Generating your practice test...</LoadingSpinner>
+        <LoadingSpinner>
+          <Loader2
+            size={24}
+            style={{
+              animation: "spin 1s linear infinite",
+              marginBottom: "1rem",
+            }}
+          />
+          <div>Generating your practice test with AI...</div>
+        </LoadingSpinner>
       ) : submitted ? (
         <>
           <ResultsCard>
             <Score>{score}%</Score>
             <ScoreMessage $passed={score >= 75}>
               {score >= 75
-                ? "🎉 Great job! You passed!"
-                : "📚 Keep practicing! Review the explanations below."}
+                ? "🎉 Great job! You passed! Keep up the good work!"
+                : "📚 Keep practicing! Review the explanations below to improve."}
             </ScoreMessage>
 
             {domainScores.length > 0 && (
@@ -610,7 +802,7 @@ export default function PracticePage() {
               </DomainStatsContainer>
             )}
 
-            <RetakeButton onClick={() => setQuestions([])}>
+            <RetakeButton onClick={resetTest}>
               <RefreshCw size={14} /> Take Another Test
             </RetakeButton>
           </ResultsCard>
@@ -631,7 +823,7 @@ export default function PracticePage() {
                   </div>
                 </QuestionHeader>
 
-                <Scenario>{q.scenario}</Scenario>
+                <Scenario>📖 {q.scenario}</Scenario>
                 <QuestionText>{q.question}</QuestionText>
 
                 <OptionsContainer>
@@ -657,18 +849,10 @@ export default function PracticePage() {
                         />
                         <OptionText>{option}</OptionText>
                         {isCorrectAnswer && (
-                          <CheckCircle
-                            size={16}
-                            color="#22c55e"
-                            style={{ marginLeft: "auto" }}
-                          />
+                          <CheckCircle size={16} color="#22c55e" />
                         )}
                         {isSelected && !isCorrectAnswer && (
-                          <XCircle
-                            size={16}
-                            color="#ef4444"
-                            style={{ marginLeft: "auto" }}
-                          />
+                          <XCircle size={16} color="#ef4444" />
                         )}
                       </OptionLabel>
                     );
@@ -701,7 +885,7 @@ export default function PracticePage() {
                 </div>
               </QuestionHeader>
 
-              <Scenario>{currentQuestion.scenario}</Scenario>
+              <Scenario>📖 {currentQuestion.scenario}</Scenario>
               <QuestionText>{currentQuestion.question}</QuestionText>
 
               <OptionsContainer>
@@ -752,6 +936,17 @@ export default function PracticePage() {
           </NavigationButtons>
         </>
       )}
+
+      <style jsx global>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </Container>
   );
 }
