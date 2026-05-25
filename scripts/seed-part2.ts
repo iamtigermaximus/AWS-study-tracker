@@ -4,415 +4,189 @@ const prisma = new PrismaClient();
 
 const lessonsPart2 = [
   {
-    lessonNumber: 41,
-    sectionNumber: 5,
-    sectionName: "EC2 Fundamentals",
-    title: "EC2 Instances Launch Types Hands On",
-    duration: "00:08:54",
-    domain: "Cost",
-    description:
-      "Launch On-Demand instance. Request Spot Instance, see pricing history. Compare pricing options.",
-  },
-
-  // SECTION 6: EC2 - Advanced (42-49)
-  {
-    lessonNumber: 42,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "Private vs Public vs Elastic IP",
-    duration: "00:04:43",
-    domain: "Resilient",
-    description:
-      "Private IP (internal network), Public IP (internet accessible, changes on stop/start), Elastic IP (static public IP).",
-  },
-  {
-    lessonNumber: 43,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "Private vs Public vs Elastic IP Hands On",
-    duration: "00:06:07",
-    domain: "Resilient",
-    description:
-      "Launch EC2, note public IP. Stop instance, note IP changes. Allocate Elastic IP, associate to instance.",
-  },
-  {
-    lessonNumber: 44,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "EC2 Placement Groups",
-    duration: "00:05:51",
-    domain: "Resilient",
-    description:
-      "Placement Group strategies: Cluster (same rack - low latency), Spread (distinct hardware), Partition.",
-  },
-  {
-    lessonNumber: 45,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "EC2 Placement Groups - Hands On",
-    duration: "00:01:43",
-    domain: "Resilient",
-    description:
-      "Create Cluster placement group, launch 2 EC2 instances. Test network latency.",
-  },
-  {
-    lessonNumber: 46,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "Elastic Network Interfaces (ENI) - Overview",
-    duration: "00:02:17",
-    domain: "Resilient",
-    description:
-      "ENI = virtual network card. Attributes: primary private IPv4, secondary IPv4, Elastic IP, Security Groups.",
-  },
-  {
-    lessonNumber: 47,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "Elastic Network Interfaces (ENI) - Hands On",
-    duration: "00:05:24",
-    domain: "Resilient",
-    description:
-      "Create ENI, attach to EC2. Add secondary IP. Move ENI to another EC2 instance.",
-  },
-  {
-    lessonNumber: 48,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "EC2 Hibernate",
-    duration: "00:03:14",
-    domain: "Resilient",
-    description:
-      "Hibernate - pause instance, RAM state saved to EBS. Faster boot. Requirements and use cases.",
-  },
-  {
-    lessonNumber: 49,
-    sectionNumber: 6,
-    sectionName: "EC2 - Advanced",
-    title: "EC2 Hibernate - Hands On",
-    duration: "00:04:09",
-    domain: "Resilient",
-    description:
-      "Enable hibernation at launch. Launch EC2, create files. Hibernate, start - files still exist.",
-  },
-
-  // SECTION 7: EC2 Instance Storage (50-63)
-  {
-    lessonNumber: 50,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Overview",
-    duration: "00:04:49",
-    domain: "Resilient",
-    description:
-      "Elastic Block Store - network-attached persistent storage. Survives instance termination. AZ-specific.",
-  },
-  {
-    lessonNumber: 51,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Hands On",
-    duration: "00:05:35",
-    domain: "Resilient",
-    description:
-      "Create EBS volume, attach to EC2. Format, mount, create file. Detach, attach to different instance.",
-  },
-  {
-    lessonNumber: 52,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Snapshots",
-    duration: "00:02:09",
-    domain: "Resilient",
-    description:
-      "Snapshots - incremental backup of EBS volume to S3. First full, subsequent incremental.",
-  },
-  {
-    lessonNumber: 53,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Snapshots - Hands On",
-    duration: "00:03:39",
-    domain: "Resilient",
-    description:
-      "Take snapshot of EBS volume. Create new volume from snapshot. Copy to different region.",
-  },
-  {
-    lessonNumber: 54,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "AMI Overview",
-    duration: "00:02:46",
-    domain: "Resilient",
-    description:
-      "AMI - template for EC2 instances. Includes OS, applications, data. Build custom AMIs.",
-  },
-  {
-    lessonNumber: 55,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "AMI Hands On",
-    duration: "00:05:00",
-    domain: "Resilient",
-    description:
-      "Launch EC2, install Apache, create custom AMI. Launch new instance from AMI - Apache pre-installed.",
-  },
-  {
-    lessonNumber: 56,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EC2 Instance Store",
-    duration: "00:02:48",
-    domain: "Resilient",
-    description:
-      "Instance Store - physically attached storage. Very high IOPS. Ephemeral - data lost on stop.",
-  },
-  {
-    lessonNumber: 57,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Volume Types",
-    duration: "00:05:04",
-    domain: "Resilient",
-    description:
-      "SSD-backed: gp2/gp3 (General Purpose), io1/io2 (Provisioned IOPS). HDD-backed: st1, sc1.",
-  },
-  {
-    lessonNumber: 58,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Multi-Attach",
-    duration: "00:01:46",
-    domain: "Resilient",
-    description:
-      "Multi-Attach - attach same io1/io2 volume to up to 16 EC2 instances in same AZ.",
-  },
-  {
-    lessonNumber: 59,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS Encryption",
-    duration: "00:03:48",
+    lessonNumber: 21,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "SSL Encryption, SNI & MITM",
+    duration: "00:07:39",
     domain: "Security",
-    description:
-      "EBS encryption uses KMS. Data at rest encrypted, in-flight encrypted. Snapshots encrypted.",
+    description: "SSL/TLS, Server Name Indication, Man-in-the-Middle attacks.",
   },
   {
-    lessonNumber: 60,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "Amazon EFS",
-    duration: "00:05:19",
-    domain: "Resilient",
-    description:
-      "Elastic File System - managed NFS for Linux EC2. Serverless, scalable. Multi-AZ.",
-  },
-  {
-    lessonNumber: 61,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "Amazon EFS - Hands On",
-    duration: "00:13:06",
-    domain: "Resilient",
-    description:
-      "Create EFS file system. Launch 2 EC2 instances in different AZs. Mount EFS on both.",
-  },
-  {
-    lessonNumber: 62,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EFS vs EBS",
-    duration: "00:02:12",
-    domain: "Resilient",
-    description:
-      "EBS: single instance, one AZ, block storage. EFS: multi-instance, multi-AZ, file storage.",
-  },
-  {
-    lessonNumber: 63,
-    sectionNumber: 7,
-    sectionName: "EC2 Instance Storage",
-    title: "EBS & EFS - Section Cleanup",
-    duration: "00:01:32",
-    domain: "Resilient",
-    description:
-      "Terminate EC2 instances, delete EBS volumes, delete EFS file systems to avoid charges.",
-  },
-
-  // SECTION 8: High Availability & Scalability (64-80)
-  {
-    lessonNumber: 64,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "High Availability and Scalability",
-    duration: "00:05:06",
-    domain: "Resilient",
-    description:
-      "Scalability: Vertical (bigger instance) vs Horizontal (more instances). High Availability: across AZs.",
-  },
-  {
-    lessonNumber: 65,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Elastic Load Balancing (ELB) Overview",
-    duration: "00:06:16",
-    domain: "Resilient",
-    description:
-      "ELB types: ALB (Layer 7), NLB (Layer 4, millions RPS), GWLB (Layer 3 - virtual appliances).",
-  },
-  {
-    lessonNumber: 66,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Application Load Balancer (ALB)",
-    duration: "00:05:50",
-    domain: "Resilient",
-    description:
-      "ALB features: path-based routing, host-based routing, query string/header routing. Target groups.",
-  },
-  {
-    lessonNumber: 67,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Application Load Balancer (ALB) - Hands On - Part 1",
-    duration: "00:08:35",
-    domain: "Resilient",
-    description:
-      "Create ALB, configure listener (port 80), create target group with 2 EC2 instances in different AZs.",
-  },
-  {
-    lessonNumber: 68,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Application Load Balancer (ALB) - Hands On - Part 2",
-    duration: "00:05:38",
-    domain: "Resilient",
-    description:
-      "Add path-based routing: /api/ to API target group, /static/ to static target group.",
-  },
-  {
-    lessonNumber: 69,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Network Load Balancer (NLB)",
-    duration: "00:03:25",
-    domain: "Resilient",
-    description:
-      "NLB features: TCP/UDP/TLS, ultra-high performance, static IP per AZ, preserve client IP.",
-  },
-  {
-    lessonNumber: 70,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Network Load Balancer (NLB) - Hands On",
-    duration: "00:06:04",
-    domain: "Resilient",
-    description:
-      "Create NLB (internet-facing), configure TCP listener, register EC2 targets. Test load balancing.",
-  },
-  {
-    lessonNumber: 71,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Gateway Load Balancer (GWLB)",
-    duration: "00:03:48",
-    domain: "Resilient",
-    description:
-      "GWLB - deploy and scale third-party virtual appliances (firewalls, IDS/IPS). Uses GENEVE protocol.",
-  },
-  {
-    lessonNumber: 72,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Elastic Load Balancer - Sticky Sessions",
-    duration: "00:05:52",
-    domain: "Resilient",
-    description:
-      "Sticky Sessions (Session Affinity) - always route same client to same target. Uses cookies.",
-  },
-  {
-    lessonNumber: 73,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Elastic Load Balancer - Cross Zone Load Balancing",
-    duration: "00:05:54",
-    domain: "Resilient",
-    description:
-      "Cross-Zone LB - distribute traffic evenly across instances in all AZs (not just within AZ).",
-  },
-  {
-    lessonNumber: 74,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Elastic Load Balancer - SSL Certificates",
-    duration: "00:06:05",
+    lessonNumber: 22,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "AWS Certificate Manager - ACM",
+    duration: "00:03:35",
     domain: "Security",
-    description:
-      "SSL/TLS termination on ELB - HTTPS listener, ACM certificate. SNI for multiple certificates.",
+    description: "Provision, manage, and deploy SSL/TLS certificates.",
   },
   {
-    lessonNumber: 75,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Elastic Load Balancer - SSL Certificates - Hands On",
-    duration: "00:02:00",
+    lessonNumber: 23,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "CloudHSM",
+    duration: "00:05:10",
     domain: "Security",
-    description:
-      "Request public SSL certificate from ACM. Add HTTPS listener to ALB, attach certificate.",
+    description: "Dedicated hardware security module in AWS.",
   },
   {
-    lessonNumber: 76,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Elastic Load Balancer - Connection Draining",
-    duration: "00:02:23",
+    lessonNumber: 24,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "Solution Architecture - SSL on ELB",
+    duration: "00:03:11",
     domain: "Resilient",
-    description:
-      "Connection Draining - time to complete in-flight requests before deregistering target.",
+    description: "Offload SSL termination at the load balancer.",
   },
   {
-    lessonNumber: 77,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Auto Scaling Groups (ASG) Overview",
-    duration: "00:04:43",
-    domain: "Resilient",
-    description:
-      "ASG components: Launch Template, Scaling Policies, desired/min/max capacity. Health Checks.",
+    lessonNumber: 25,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "S3 Security",
+    duration: "00:10:16",
+    domain: "Security",
+    description: "Bucket policies, ACLs, pre-signed URLs, encryption.",
   },
   {
-    lessonNumber: 78,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Auto Scaling Groups Hands On",
-    duration: "00:08:57",
-    domain: "Resilient",
-    description:
-      "Create Launch Template with Apache. Create ASG with min=1, desired=2, max=4. Test manual scaling.",
+    lessonNumber: 26,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "S3 Access Points",
+    duration: "00:03:35",
+    domain: "Storage",
+    description: "Simplify permissions management for S3 at scale.",
   },
   {
-    lessonNumber: 79,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Auto Scaling Groups - Scaling Policies",
-    duration: "00:04:24",
-    domain: "Resilient",
-    description:
-      "Policy types: Simple, Step, Target Tracking (maintain metric value), Scheduled (time-based).",
+    lessonNumber: 27,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "S3 Multi-Region Access Points",
+    duration: "00:02:41",
+    domain: "Storage",
+    description: "Global endpoints for multi-region S3 buckets.",
   },
   {
-    lessonNumber: 80,
-    sectionNumber: 8,
-    sectionName: "High Availability & Scalability",
-    title: "Auto Scaling Groups - Scaling Policies Hands On",
-    duration: "00:09:16",
+    lessonNumber: 28,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "S3 Multi-Region Access Points - Hands On",
+    duration: "00:03:44",
+    domain: "Storage",
+    description: "Practical demo of multi-region access points.",
+  },
+  {
+    lessonNumber: 29,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "S3 Object Lambda",
+    duration: "00:03:12",
+    domain: "Storage",
+    description: "Transform data as it is retrieved from S3.",
+  },
+  {
+    lessonNumber: 30,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "DDoS and AWS Shield",
+    duration: "00:06:00",
+    domain: "Security",
+    description: "Shield Standard vs Advanced for DDoS protection.",
+  },
+  {
+    lessonNumber: 31,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "AWS WAF - Web Application Firewall",
+    duration: "00:06:13",
+    domain: "Security",
+    description: "Filter web requests based on rules (SQLi, XSS, IP, etc.).",
+  },
+  {
+    lessonNumber: 32,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "AWS Firewall Manager",
+    duration: "00:02:43",
+    domain: "Security",
+    description: "Centrally configure and manage WAF across accounts.",
+  },
+  {
+    lessonNumber: 33,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "Blocking an IP Address",
+    duration: "00:05:30",
+    domain: "Security",
+    description: "Methods to block IPs: NACLs, WAF, Network Firewall.",
+  },
+  {
+    lessonNumber: 34,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "Amazon Inspector",
+    duration: "00:04:23",
+    domain: "Security",
+    description: "Automated vulnerability scanning for EC2 and ECR.",
+  },
+  {
+    lessonNumber: 35,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "AWS Config",
+    duration: "00:04:23",
+    domain: "Governance",
+    description: "Evaluate, audit, and track resource configurations.",
+  },
+  {
+    lessonNumber: 36,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "AWS Managed Logs",
+    duration: "00:01:26",
+    domain: "Monitoring",
+    description: "Centralized logging services overview.",
+  },
+  {
+    lessonNumber: 37,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "Amazon GuardDuty",
+    duration: "00:03:18",
+    domain: "Security",
+    description: "Intelligent threat detection using machine learning.",
+  },
+  {
+    lessonNumber: 38,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "IAM Advanced Policies",
+    duration: "00:04:17",
+    domain: "Security",
+    description: "Policy conditions, principals, and advanced constructs.",
+  },
+  {
+    lessonNumber: 39,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "EC2 Instance Connect",
+    duration: "00:01:48",
     domain: "Resilient",
-    description:
-      "Configure Target Tracking policy for 50% CPU. Generate CPU load, watch ASG scale out.",
+    description: "SSH access without managing SSH keys.",
+  },
+  {
+    lessonNumber: 40,
+    sectionNumber: 4,
+    sectionName: "Security",
+    title: "AWS Security Hub",
+    duration: "00:02:44",
+    domain: "Security",
+    description: "Central security posture management across accounts.",
   },
 ];
 
 async function main() {
-  console.log("🌱 Seeding Part 2: Lessons 41-80...");
+  console.log("🌱 Seeding Part 2: Lessons 21-40...");
 
   let count = 0;
   for (const lesson of lessonsPart2) {
@@ -443,9 +217,8 @@ async function main() {
     if (count % 10 === 0) console.log(`   Inserted ${count} lessons...`);
   }
 
-  console.log(`✅ Part 2 Complete! Inserted ${count} lessons (41-80)`);
-  console.log(`📌 Total so far: 80 lessons`);
-  console.log("📌 Next: Run part 3 for lessons 81-120");
+  console.log(`✅ Part 2 Complete! Inserted ${count} lessons (21-40)`);
+  console.log("📌 Next: Run seed-part3.ts for lessons 41-60");
 }
 
 main()

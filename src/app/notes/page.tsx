@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
-import { Plus, Search, Sparkles, Edit3, Trash2 } from "lucide-react";
+import { Plus, Search, Edit3, Trash2, X, AlertTriangle } from "lucide-react";
 
 interface Note {
   id: string;
@@ -65,6 +66,8 @@ const AddButton = styled.button`
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
 
   &:hover {
     background: #2563eb;
@@ -133,6 +136,7 @@ const NoteCard = styled.div`
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 
   &:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -261,6 +265,9 @@ const ActionButton = styled.button`
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  background: transparent;
 
   &:hover {
     background: #e5e7eb;
@@ -281,6 +288,7 @@ const EmptyState = styled.div`
   color: #6b7280;
 `;
 
+// Note Modal (Create/Edit)
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -321,6 +329,9 @@ const CloseButton = styled.button`
   color: #9ca3af;
   font-size: 1.5rem;
   line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
 
   &:hover {
     color: #4b5563;
@@ -402,6 +413,8 @@ const SaveButton = styled.button`
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
+  border: none;
+  cursor: pointer;
 
   &:hover {
     background: #2563eb;
@@ -415,9 +428,91 @@ const CancelButton = styled.button`
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
+  border: none;
+  cursor: pointer;
 
   &:hover {
     background: #e5e7eb;
+  }
+`;
+
+// Delete Confirmation Modal
+const DeleteModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 1rem;
+`;
+
+const DeleteModal = styled.div`
+  background: white;
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+`;
+
+const DeleteModalHeader = styled.div`
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fef2f2;
+`;
+
+const DeleteModalTitle = styled.h2`
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const DeleteModalBody = styled.div`
+  padding: 1.5rem;
+`;
+
+const DeleteModalMessage = styled.p`
+  color: #374151;
+  margin-bottom: 0.5rem;
+`;
+
+const DeleteModalSubMessage = styled.p`
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+`;
+
+const DeleteModalFooter = styled.div`
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  background: #f9fafb;
+`;
+
+const DeleteConfirmButton = styled.button`
+  padding: 0.5rem 1rem;
+  background: #dc2626;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: #b91c1c;
   }
 `;
 
@@ -427,38 +522,25 @@ const LoadingSpinner = styled.div`
   color: #6b7280;
 `;
 
-// Mock data for now (will connect to API later)
-const mockNotes: Note[] = [
-  {
-    id: "1",
-    title: "S3 Storage Classes",
-    content:
-      "S3 Standard: frequently accessed data\nS3 Intelligent-Tiering: unknown access patterns\nS3 Standard-IA: infrequent access\nS3 One Zone-IA: infrequent access, non-critical\nS3 Glacier: long-term archive\nS3 Glacier Deep Archive: long-term archive, cheapest",
-    domain: "Foundation",
-    examWeight: "High",
-    topicNumber: 4,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "IAM Policy Evaluation",
-    content:
-      "1. All applicable policies evaluated\n2. If ANY explicit DENY exists → DENY\n3. If no explicit DENY and at least one ALLOW → ALLOW\n4. Otherwise → DENY (implicit)",
-    domain: "Security",
-    examWeight: "High",
-    topicNumber: 8,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 1rem;
+  background: #fee2e2;
+  border-radius: 0.75rem;
+  color: #991b1b;
+  margin-bottom: 1rem;
+`;
 
 export default function NotesPage() {
+  const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterDomain, setFilterDomain] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -467,57 +549,65 @@ export default function NotesPage() {
     examWeight: "Medium",
   });
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        // TODO: Replace with actual API call
-        // const res = await fetch("/api/concept-note");
-        // const data = await res.json();
-        // setNotes(data);
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Using mock data for now
-        setTimeout(() => {
-          setNotes(mockNotes);
-          setLoading(false);
-        }, 500);
-      } catch (error) {
-        console.error("Failed to fetch notes:", error);
-        setLoading(false);
+      const res = await fetch("/api/concept-note");
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
-    };
 
+      const data = await res.json();
+      setNotes(data);
+    } catch (error) {
+      console.error("Failed to fetch notes:", error);
+      setError("Unable to load notes. You can still create new notes!");
+      setNotes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchNotes();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // TODO: Replace with actual API call
-    const newNote: Note = {
-      id: Date.now().toString(),
-      ...formData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      if (editingNote) {
+        const res = await fetch(`/api/concept-note/${editingNote.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        if (!res.ok) throw new Error("Failed to update note");
+      } else {
+        const res = await fetch("/api/concept-note", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        if (!res.ok) throw new Error("Failed to create note");
+      }
 
-    if (editingNote) {
-      setNotes(
-        notes.map((n) =>
-          n.id === editingNote.id ? { ...newNote, id: n.id } : n,
-        ),
-      );
-    } else {
-      setNotes([newNote, ...notes]);
+      await fetchNotes();
+      setIsModalOpen(false);
+      setEditingNote(null);
+      setFormData({
+        title: "",
+        content: "",
+        domain: "Security",
+        examWeight: "Medium",
+      });
+    } catch (error) {
+      console.error("Failed to save note:", error);
+      alert("Failed to save note. Please try again.");
     }
-
-    setIsModalOpen(false);
-    setEditingNote(null);
-    setFormData({
-      title: "",
-      content: "",
-      domain: "Security",
-      examWeight: "Medium",
-    });
   };
 
   const handleEdit = (note: Note) => {
@@ -531,10 +621,36 @@ export default function NotesPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this note?")) {
-      setNotes(notes.filter((n) => n.id !== id));
+  const handleDeleteClick = (note: Note) => {
+    setNoteToDelete(note);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!noteToDelete) return;
+
+    try {
+      const res = await fetch(`/api/concept-note/${noteToDelete.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete note");
+
+      await fetchNotes();
+      setIsDeleteModalOpen(false);
+      setNoteToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+      alert("Failed to delete note. Please try again.");
     }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setNoteToDelete(null);
+  };
+
+  const handleCardClick = (noteId: string) => {
+    router.push(`/notes/${noteId}`);
   };
 
   const domains = [...new Set(notes.map((n) => n.domain))];
@@ -577,49 +693,77 @@ export default function NotesPage() {
         </AddButton>
       </Header>
 
-      <SearchContainer>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          <SearchInputWrapper>
-            <Search
-              size={18}
-              style={{
-                position: "absolute",
-                left: "0.75rem",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#9ca3af",
-              }}
-            />
-            <SearchInput
-              placeholder="Search notes..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </SearchInputWrapper>
-          <FilterSelect
-            value={filterDomain}
-            onChange={(e) => setFilterDomain(e.target.value)}
-          >
-            <option value="">All Domains</option>
-            {domains.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </FilterSelect>
-        </div>
-      </SearchContainer>
+      {error && <ErrorMessage>⚠️ {error}</ErrorMessage>}
 
-      {filteredNotes.length === 0 ? (
+      {notes.length > 0 && (
+        <SearchContainer>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            <SearchInputWrapper>
+              <Search
+                size={18}
+                style={{
+                  position: "absolute",
+                  left: "0.75rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#9ca3af",
+                }}
+              />
+              <SearchInput
+                placeholder="Search notes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </SearchInputWrapper>
+            {domains.length > 0 && (
+              <FilterSelect
+                value={filterDomain}
+                onChange={(e) => setFilterDomain(e.target.value)}
+              >
+                <option value="">All Domains</option>
+                {domains.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
+          </div>
+        </SearchContainer>
+      )}
+
+      {filteredNotes.length === 0 && notes.length === 0 && (
         <EmptyState>
-          <p>
-            No notes yet. Click "New Note" to create your first concept note!
+          <p style={{ marginBottom: "1rem" }}>
+            No notes yet. Create your first concept note to start learning!
           </p>
+          <AddButton
+            onClick={() => {
+              setEditingNote(null);
+              setFormData({
+                title: "",
+                content: "",
+                domain: "Security",
+                examWeight: "Medium",
+              });
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus size={18} /> Create Your First Note
+          </AddButton>
         </EmptyState>
-      ) : (
+      )}
+
+      {filteredNotes.length === 0 && notes.length > 0 && (
+        <EmptyState>
+          <p>No notes match your search criteria.</p>
+        </EmptyState>
+      )}
+
+      {filteredNotes.length > 0 && (
         <NotesGrid>
           {filteredNotes.map((note) => (
-            <NoteCard key={note.id}>
+            <NoteCard key={note.id} onClick={() => handleCardClick(note.id)}>
               <NoteHeader>
                 <NoteTitle>{note.title}</NoteTitle>
                 <NoteMeta>
@@ -636,11 +780,14 @@ export default function NotesPage() {
                 <DateText>
                   Updated: {new Date(note.updatedAt).toLocaleDateString()}
                 </DateText>
-                <div style={{ display: "flex", gap: "0.25rem" }}>
+                <div
+                  style={{ display: "flex", gap: "0.25rem" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <ActionButton onClick={() => handleEdit(note)}>
                     <Edit3 size={14} /> Edit
                   </ActionButton>
-                  <ActionButton onClick={() => handleDelete(note.id)}>
+                  <ActionButton onClick={() => handleDeleteClick(note)}>
                     <Trash2 size={14} /> Delete
                   </ActionButton>
                 </div>
@@ -650,7 +797,7 @@ export default function NotesPage() {
         </NotesGrid>
       )}
 
-      {/* Modal for creating/editing notes */}
+      {/* Create/Edit Note Modal */}
       {isModalOpen && (
         <ModalOverlay onClick={() => setIsModalOpen(false)}>
           <Modal onClick={(e) => e.stopPropagation()}>
@@ -729,6 +876,37 @@ export default function NotesPage() {
             </form>
           </Modal>
         </ModalOverlay>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && noteToDelete && (
+        <DeleteModalOverlay onClick={handleCancelDelete}>
+          <DeleteModal onClick={(e) => e.stopPropagation()}>
+            <DeleteModalHeader>
+              <DeleteModalTitle>
+                <AlertTriangle size={20} />
+                Delete Note
+              </DeleteModalTitle>
+              <CloseButton onClick={handleCancelDelete}>×</CloseButton>
+            </DeleteModalHeader>
+            <DeleteModalBody>
+              <DeleteModalMessage>
+                Are you sure you want to delete "
+                <strong>{noteToDelete.title}</strong>"?
+              </DeleteModalMessage>
+              <DeleteModalSubMessage>
+                This action cannot be undone. The note will be permanently
+                deleted.
+              </DeleteModalSubMessage>
+            </DeleteModalBody>
+            <DeleteModalFooter>
+              <CancelButton onClick={handleCancelDelete}>Cancel</CancelButton>
+              <DeleteConfirmButton onClick={handleConfirmDelete}>
+                Delete
+              </DeleteConfirmButton>
+            </DeleteModalFooter>
+          </DeleteModal>
+        </DeleteModalOverlay>
       )}
     </Container>
   );

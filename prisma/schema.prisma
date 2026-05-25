@@ -67,6 +67,16 @@ model CurriculumTopic {
   updatedAt      DateTime @updatedAt
 }
 
+model TopicNote {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+}
 // Projects you build
 model Project {
   id          String   @id @default(cuid())
