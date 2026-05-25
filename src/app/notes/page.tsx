@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
-import { Plus, Search, Edit3, Trash2, X, AlertTriangle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit3,
+  Trash2,
+  X,
+  AlertTriangle,
+  Sparkles,
+  Send,
+  Loader2,
+} from "lucide-react";
 
 interface Note {
   id: string;
@@ -14,6 +24,12 @@ interface Note {
   topicNumber?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+interface AITopic {
+  name: string;
+  domain: string;
+  examWeight: string;
 }
 
 const Container = styled.div`
@@ -307,7 +323,7 @@ const Modal = styled.div`
   background: white;
   border-radius: 0.75rem;
   width: 100%;
-  max-width: 600px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
 `;
@@ -375,7 +391,8 @@ const TextArea = styled.textarea`
   border-radius: 0.5rem;
   font-size: 0.875rem;
   resize: vertical;
-  min-height: 150px;
+  min-height: 200px;
+  font-family: monospace;
 
   &:focus {
     outline: none;
@@ -516,6 +533,118 @@ const DeleteConfirmButton = styled.button`
   }
 `;
 
+// AI Assistant Section
+const AISection = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: white;
+`;
+
+const AITitle = styled.h3`
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const AIDescription = styled.p`
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 1rem;
+`;
+
+const AIInputGroup = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+`;
+
+const AITopicInput = styled.input`
+  flex: 2;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  color: #1f2937;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+`;
+
+const AIDomainSelect = styled.select`
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  color: #1f2937;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+`;
+
+const AIWeightSelect = styled.select`
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: white;
+  color: #1f2937;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+`;
+
+const AIGenerateButton = styled.button<{ $loading?: boolean }>`
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.5rem;
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: ${(props) => (props.$loading ? "not-allowed" : "pointer")};
+  opacity: ${(props) => (props.$loading ? 0.7 : 1)};
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+`;
+
+const AILoadingMessage = styled.div`
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
 const LoadingSpinner = styled.div`
   text-align: center;
   padding: 2rem;
@@ -530,6 +659,20 @@ const ErrorMessage = styled.div`
   color: #991b1b;
   margin-bottom: 1rem;
 `;
+
+// Common AWS Topics for quick selection
+const commonTopics: AITopic[] = [
+  { name: "S3 Storage Classes", domain: "Foundation", examWeight: "High" },
+  { name: "EC2 Instance Types", domain: "Foundation", examWeight: "High" },
+  { name: "IAM Policies and Roles", domain: "Security", examWeight: "High" },
+  { name: "VPC Networking", domain: "Foundation", examWeight: "High" },
+  { name: "RDS vs DynamoDB", domain: "Performance", examWeight: "Medium" },
+  { name: "Lambda Functions", domain: "Performance", examWeight: "Medium" },
+  { name: "CloudFront CDN", domain: "Performance", examWeight: "Medium" },
+  { name: "Route 53 DNS", domain: "Foundation", examWeight: "Medium" },
+  { name: "CloudFormation", domain: "Resilient", examWeight: "Medium" },
+  { name: "AWS Shield & WAF", domain: "Security", examWeight: "High" },
+];
 
 export default function NotesPage() {
   const router = useRouter();
@@ -548,6 +691,14 @@ export default function NotesPage() {
     domain: "Security",
     examWeight: "Medium",
   });
+
+  // AI Assistant state
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiDomain, setAiDomain] = useState("Security");
+  const [aiWeight, setAiWeight] = useState("High");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [showAICustomTopic, setShowAICustomTopic] = useState(false);
+  const [selectedCommonTopic, setSelectedCommonTopic] = useState<string>("");
 
   const fetchNotes = async () => {
     try {
@@ -653,6 +804,72 @@ export default function NotesPage() {
     router.push(`/notes/${noteId}`);
   };
 
+  const handleAIGenerate = async () => {
+    const topicToExplain = selectedCommonTopic || aiTopic;
+
+    if (!topicToExplain.trim()) {
+      alert("Please select or enter a topic to explain");
+      return;
+    }
+
+    setAiGenerating(true);
+
+    // Open the modal first
+    setIsModalOpen(true);
+    setEditingNote(null);
+    setFormData({
+      title: `${topicToExplain} - AI Generated Notes`,
+      content:
+        "🤖 AI is generating comprehensive notes for you...\n\nPlease wait while I create detailed AWS notes on this topic.",
+      domain: aiDomain,
+      examWeight: aiWeight,
+    });
+
+    try {
+      const res = await fetch("/api/ai/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conceptTitle: topicToExplain,
+          domain: aiDomain,
+          examWeight: aiWeight,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      setFormData({
+        title: `${topicToExplain} - AI Generated Notes`,
+        content:
+          data.explanation ||
+          "AI explanation generated! You can edit this text and save it as a note.",
+        domain: aiDomain,
+        examWeight: aiWeight,
+      });
+    } catch (error) {
+      console.error("Failed to generate AI explanation:", error);
+      setFormData({
+        ...formData,
+        content: `Failed to generate AI explanation. Please try again or write your own notes.\n\nTopic: ${topicToExplain}\nDomain: ${aiDomain}\nExam Weight: ${aiWeight}`,
+      });
+    } finally {
+      setAiGenerating(false);
+      setSelectedCommonTopic("");
+      setAiTopic("");
+    }
+  };
+
+  const handleCommonTopicSelect = (topic: AITopic) => {
+    setSelectedCommonTopic(topic.name);
+    setAiDomain(topic.domain);
+    setAiWeight(topic.examWeight);
+    setShowAICustomTopic(false);
+  };
+
   const domains = [...new Set(notes.map((n) => n.domain))];
   const filteredNotes = notes.filter((n) => {
     const matchesSearch =
@@ -692,6 +909,109 @@ export default function NotesPage() {
           <Plus size={18} /> New Note
         </AddButton>
       </Header>
+
+      {/* AI Assistant Section */}
+      <AISection>
+        <AITitle>
+          <Sparkles size={18} />
+          AI Study Assistant
+        </AITitle>
+        <AIDescription>
+          Get AI-generated notes on any topic. Select a common topic below or
+          enter your own.
+        </AIDescription>
+
+        {/* Common Topics Quick Select */}
+        <div style={{ marginBottom: "1rem" }}>
+          <Label style={{ color: "white", marginBottom: "0.5rem" }}>
+            Popular Topics:
+          </Label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            {commonTopics.map((topic) => (
+              <button
+                key={topic.name}
+                onClick={() => handleCommonTopicSelect(topic)}
+                style={{
+                  background: "rgba(255, 255, 255, 0.2)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  borderRadius: "0.5rem",
+                  padding: "0.4rem 0.75rem",
+                  fontSize: "0.75rem",
+                  color: "white",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                }}
+              >
+                {topic.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Topic Input */}
+        <AIInputGroup>
+          <AITopicInput
+            type="text"
+            placeholder="Or enter a custom AWS topic (e.g., 'AWS WAF vs Shield', 'EBS Volume Types')"
+            value={aiTopic}
+            onChange={(e) => {
+              setAiTopic(e.target.value);
+              setSelectedCommonTopic("");
+            }}
+          />
+          <AIDomainSelect
+            value={aiDomain}
+            onChange={(e) => setAiDomain(e.target.value)}
+          >
+            <option value="Foundation">Foundation</option>
+            <option value="Security">Security</option>
+            <option value="Resilient">Resilient</option>
+            <option value="Performance">Performance</option>
+            <option value="Cost">Cost</option>
+          </AIDomainSelect>
+          <AIWeightSelect
+            value={aiWeight}
+            onChange={(e) => setAiWeight(e.target.value)}
+          >
+            <option value="High">High Weight</option>
+            <option value="Medium">Medium Weight</option>
+            <option value="Low">Low Weight</option>
+          </AIWeightSelect>
+          <AIGenerateButton onClick={handleAIGenerate} $loading={aiGenerating}>
+            {aiGenerating ? (
+              <>
+                <Loader2
+                  size={16}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles size={16} />
+                Generate Notes
+              </>
+            )}
+          </AIGenerateButton>
+        </AIInputGroup>
+
+        {aiGenerating && (
+          <AILoadingMessage>
+            <Loader2
+              size={14}
+              style={{ animation: "spin 1s linear infinite" }}
+            />
+            AI is researching and creating comprehensive notes on this AWS
+            topic...
+          </AILoadingMessage>
+        )}
+      </AISection>
 
       {error && <ErrorMessage>⚠️ {error}</ErrorMessage>}
 
@@ -735,7 +1055,8 @@ export default function NotesPage() {
       {filteredNotes.length === 0 && notes.length === 0 && (
         <EmptyState>
           <p style={{ marginBottom: "1rem" }}>
-            No notes yet. Create your first concept note to start learning!
+            No notes yet. Use the AI Assistant above to generate notes on AWS
+            topics!
           </p>
           <AddButton
             onClick={() => {
@@ -803,7 +1124,19 @@ export default function NotesPage() {
           <Modal onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <ModalTitle>
-                {editingNote ? "Edit Note" : "New Concept Note"}
+                {editingNote ? "Edit Note" : "Create New Note"}
+                {!editingNote && (
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      fontWeight: "normal",
+                      marginLeft: "0.5rem",
+                      color: "#6b7280",
+                    }}
+                  >
+                    (You can edit AI-generated notes before saving)
+                  </span>
+                )}
               </ModalTitle>
               <CloseButton onClick={() => setIsModalOpen(false)}>×</CloseButton>
             </ModalHeader>
@@ -823,7 +1156,7 @@ export default function NotesPage() {
                 <FormGroup>
                   <Label>Content</Label>
                   <TextArea
-                    placeholder="Write your explanation in your own words..."
+                    placeholder="Write your explanation in your own words... or edit the AI-generated content above!"
                     value={formData.content}
                     onChange={(e) =>
                       setFormData({ ...formData, content: e.target.value })
@@ -871,7 +1204,9 @@ export default function NotesPage() {
                 >
                   Cancel
                 </CancelButton>
-                <SaveButton type="submit">Save Note</SaveButton>
+                <SaveButton type="submit">
+                  {editingNote ? "Update Note" : "Save Note"}
+                </SaveButton>
               </ModalFooter>
             </form>
           </Modal>
@@ -902,12 +1237,23 @@ export default function NotesPage() {
             <DeleteModalFooter>
               <CancelButton onClick={handleCancelDelete}>Cancel</CancelButton>
               <DeleteConfirmButton onClick={handleConfirmDelete}>
-                Delete
+                Delete Forever
               </DeleteConfirmButton>
             </DeleteModalFooter>
           </DeleteModal>
         </DeleteModalOverlay>
       )}
+
+      <style jsx global>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </Container>
   );
 }
