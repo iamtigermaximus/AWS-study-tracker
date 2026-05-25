@@ -72,9 +72,9 @@ model TopicNote {
   courseId    String
   title       String
   content     String   @db.Text
-  topicNumber Int      // Required - links to CurriculumTopic
-  domain      String   // For filtering
-  examWeight  String   // High, Medium, Low
+  topicNumber Int
+  domain      String
+  examWeight  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

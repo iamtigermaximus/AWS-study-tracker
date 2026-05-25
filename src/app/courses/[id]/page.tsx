@@ -8,7 +8,6 @@ import ReactMarkdown from "react-markdown";
 import {
   ChevronLeft,
   Award,
-  CheckCircle,
   ExternalLink,
   Calendar,
   FileText,
@@ -19,6 +18,13 @@ import {
   Save,
   X,
   AlertCircle,
+  Send,
+  Loader2,
+  Plus,
+  Globe,
+  Code,
+  Brain,
+  BookOpen,
 } from "lucide-react";
 
 interface Certification {
@@ -216,7 +222,7 @@ const Button = styled.button<{
           background: linear-gradient(135deg, #667eea, #764ba2);
           color: white;
           border: none;
-          &:hover { opacity: 0.9; }
+          &:hover { opacity: 0.9; transform: translateY(-1px); }
         `;
       default:
         return `
@@ -245,18 +251,6 @@ const TextArea = styled.textarea`
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-`;
-
-const AILoadingMessage = styled.div`
-  background: #f0fdf4;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.8rem;
-  color: #166534;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 `;
 
 const NotesViewer = styled.div`
@@ -402,6 +396,127 @@ const EmptyNotesMessage = styled.div`
   font-style: italic;
 `;
 
+// AI Assistant Section
+const AISection = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+`;
+
+const AITitle = styled.h3`
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const AIDescription = styled.p`
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 1rem;
+`;
+
+const AIInputGroup = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+`;
+
+const AITopicInput = styled.input`
+  flex: 3;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  background: white;
+  color: #1f2937;
+  placeholder: "Ask about anything - AWS, coding, math, history, science...";
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  }
+`;
+
+const AIActionButton = styled.button<{ $loading?: boolean }>`
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.75rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: ${(props) => (props.$loading ? "not-allowed" : "pointer")};
+  opacity: ${(props) => (props.$loading ? 0.7 : 1)};
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+`;
+
+const TopicChips = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+`;
+
+const TopicChip = styled.button`
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 2rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.7rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+`;
+
+const AILoadingMessage = styled.div`
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
 // Modal Components
 const ModalOverlay = styled.div`
   position: fixed;
@@ -421,15 +536,15 @@ const ModalContent = styled.div`
   background: white;
   border-radius: 0.75rem;
   padding: 1.5rem;
-  max-width: 400px;
+  max-width: 500px;
   width: 100%;
-  text-align: center;
 `;
 
 const ModalTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
+  color: #1f2937;
 `;
 
 const ModalMessage = styled.p`
@@ -441,10 +556,12 @@ const ModalMessage = styled.p`
 const ModalButtons = styled.div`
   display: flex;
   gap: 0.75rem;
-  justify-content: center;
+  justify-content: flex-end;
 `;
 
-const ModalButton = styled.button<{ $variant?: "danger" | "outline" }>`
+const ModalButton = styled.button<{
+  $variant?: "danger" | "outline" | "primary";
+}>`
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -460,6 +577,13 @@ const ModalButton = styled.button<{ $variant?: "danger" | "outline" }>`
           color: white;
           border: none;
           &:hover { background: #b91c1c; }
+        `;
+      case "primary":
+        return `
+          background: #3b82f6;
+          color: white;
+          border: none;
+          &:hover { background: #2563eb; }
         `;
       default:
         return `
@@ -478,6 +602,20 @@ const LoadingSpinner = styled.div`
   color: #6b7280;
 `;
 
+// Example topics from different categories
+const exampleTopics = [
+  { name: "Machine Learning", icon: "🧠", category: "Tech" },
+  { name: "React Hooks", icon: "⚛️", category: "Coding" },
+  { name: "Quantum Computing", icon: "🔬", category: "Science" },
+  { name: "French Revolution", icon: "🇫🇷", category: "History" },
+  { name: "Photosynthesis", icon: "🌿", category: "Biology" },
+  { name: "Blockchain", icon: "⛓️", category: "Tech" },
+  { name: "Stoicism", icon: "🏛️", category: "Philosophy" },
+  { name: "Bitcoin", icon: "₿", category: "Finance" },
+  { name: "TypeScript", icon: "📘", category: "Coding" },
+  { name: "Climate Change", icon: "🌍", category: "Science" },
+];
+
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -486,9 +624,15 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [notesContent, setNotesContent] = useState("");
-  const [aiGenerating, setAiGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // AI Assistant state
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiGeneratingExplanation, setAiGeneratingExplanation] = useState(false);
+  const [showAddToNotesModal, setShowAddToNotesModal] = useState(false);
+  const [generatedExplanation, setGeneratedExplanation] = useState("");
+  const [currentTopic, setCurrentTopic] = useState("");
 
   useEffect(() => {
     fetchCert();
@@ -544,29 +688,86 @@ export default function CourseDetailPage() {
     }
   };
 
-  const generateAICheatsheet = async () => {
-    if (!cert) return;
-    setAiGenerating(true);
-    setNotesContent("🤖 AI is generating your cheatsheet...");
+  const generateAIExplanation = async (
+    topic: string,
+    addToNotes: boolean = false,
+  ) => {
+    if (!topic.trim()) {
+      alert("Please enter a topic to explain");
+      return;
+    }
+
+    setAiGeneratingExplanation(true);
 
     try {
-      const res = await fetch("/api/ai/cheatsheet", {
+      const res = await fetch("/api/ai/explain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: cert.title,
-          provider: cert.provider,
-          type: cert.type,
+          conceptTitle: topic,
+          context: cert?.title || "General Studies",
+          domain: "General",
+          examWeight: "Medium",
         }),
       });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
-      setNotesContent(data.cheatsheet || "AI generated cheatsheet");
+      const explanation =
+        data.explanation ||
+        `# ${topic}\n\nAI generated explanation for ${topic}.\n\nPlease try again later.`;
+
+      setGeneratedExplanation(explanation);
+      setCurrentTopic(topic);
+
+      if (addToNotes) {
+        setShowAddToNotesModal(true);
+      } else {
+        setIsEditing(true);
+        setNotesContent(notesContent + "\n\n---\n\n" + explanation);
+      }
     } catch (error) {
-      console.error("Failed to generate AI cheatsheet:", error);
-      setNotesContent("Failed to generate cheatsheet. Please try again.");
+      console.error("Failed to generate AI explanation:", error);
+      alert("Failed to generate explanation. Please try again.");
     } finally {
-      setAiGenerating(false);
+      setAiGeneratingExplanation(false);
     }
+  };
+
+  const addToExistingNotes = () => {
+    const newNotes = notesContent
+      ? `${notesContent}\n\n---\n\n## ${currentTopic}\n\n${generatedExplanation}`
+      : `## ${currentTopic}\n\n${generatedExplanation}`;
+
+    setNotesContent(newNotes);
+    setShowAddToNotesModal(false);
+    setAiTopic("");
+    setGeneratedExplanation("");
+    setCurrentTopic("");
+
+    saveNotesAfterAdd(newNotes);
+  };
+
+  const saveNotesAfterAdd = async (newContent: string) => {
+    try {
+      const res = await fetch(`/api/courses/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...cert,
+          notes: newContent,
+        }),
+      });
+      const updated = await res.json();
+      setCert(updated);
+    } catch (error) {
+      console.error("Failed to auto-save notes:", error);
+    }
+  };
+
+  const handleExampleClick = (topic: string) => {
+    setAiTopic(topic);
   };
 
   if (loading) {
@@ -593,6 +794,78 @@ export default function CourseDetailPage() {
       <BackLink href="/courses">
         <ChevronLeft size={16} /> Back to Certifications
       </BackLink>
+
+      {/* AI Assistant Section - Universal Topic Explainer */}
+      <AISection>
+        <AITitle>
+          <Sparkles size={18} />
+          AI Study Assistant - Explain Anything
+        </AITitle>
+        <AIDescription>
+          Ask me to explain ANY topic - technology, science, history,
+          philosophy, coding, or anything else!
+        </AIDescription>
+
+        <AIInputGroup>
+          <AITopicInput
+            type="text"
+            placeholder="Ask about anything... e.g., 'Explain quantum computing', 'What is the theory of relativity?', 'How do React hooks work?'"
+            value={aiTopic}
+            onChange={(e) => setAiTopic(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter" && aiTopic.trim()) {
+                generateAIExplanation(aiTopic, true);
+              }
+            }}
+          />
+          <AIActionButton
+            onClick={() => generateAIExplanation(aiTopic, true)}
+            $loading={aiGeneratingExplanation}
+          >
+            {aiGeneratingExplanation ? (
+              <>
+                <Loader2
+                  size={16}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
+                Explaining...
+              </>
+            ) : (
+              <>
+                <Send size={16} />
+                Explain & Add to Notes
+              </>
+            )}
+          </AIActionButton>
+        </AIInputGroup>
+
+        <div
+          style={{ marginBottom: "0.5rem", fontSize: "0.7rem", opacity: 0.8 }}
+        >
+          Try these examples:
+        </div>
+        <TopicChips>
+          {exampleTopics.map((topic) => (
+            <TopicChip
+              key={topic.name}
+              onClick={() => handleExampleClick(topic.name)}
+            >
+              {topic.icon} {topic.name}
+            </TopicChip>
+          ))}
+        </TopicChips>
+
+        {aiGeneratingExplanation && (
+          <AILoadingMessage>
+            <Loader2
+              size={14}
+              style={{ animation: "spin 1s linear infinite" }}
+            />
+            AI is researching and creating a comprehensive explanation for "
+            {aiTopic}"...
+          </AILoadingMessage>
+        )}
+      </AISection>
 
       <Card>
         <Header>
@@ -687,15 +960,12 @@ export default function CourseDetailPage() {
       <NotesSection>
         <NotesHeader>
           <NotesTitle>
-            <FileText size={20} /> Study Notes / Cheatsheet
+            <FileText size={20} /> Study Notes
           </NotesTitle>
           {!isEditing && (
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <Button $variant="outline" onClick={() => setIsEditing(true)}>
                 <Edit3 size={14} /> Edit Notes
-              </Button>
-              <Button $variant="ai" onClick={generateAICheatsheet}>
-                <Sparkles size={14} /> AI Generate
               </Button>
             </div>
           )}
@@ -715,24 +985,18 @@ export default function CourseDetailPage() {
                 />
                 <p>No notes yet.</p>
                 <p style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                  Click &quot;Edit Notes&quot; to write your own cheatsheet, or
-                  &quot;AI Generate&quot; to create one.
+                  Use the AI Assistant above to explain any topic and add it to
+                  your notes!
                 </p>
               </EmptyNotesMessage>
             )}
           </>
         ) : (
           <div>
-            {aiGenerating && (
-              <AILoadingMessage>
-                <Sparkles size={14} />
-                AI is generating a comprehensive cheatsheet...
-              </AILoadingMessage>
-            )}
             <TextArea
               value={notesContent}
               onChange={(e) => setNotesContent(e.target.value)}
-              placeholder="Write your notes, key concepts, cheatsheet here..."
+              placeholder="Write your notes here... You can also use the AI Assistant to generate explanations for any topic!"
               rows={15}
             />
             <div
@@ -759,6 +1023,34 @@ export default function CourseDetailPage() {
           </div>
         )}
       </NotesSection>
+
+      {/* Add to Notes Confirmation Modal */}
+      {showAddToNotesModal && (
+        <ModalOverlay onClick={() => setShowAddToNotesModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>Add to Your Notes?</ModalTitle>
+            <ModalMessage>
+              AI has generated an explanation for "{currentTopic}". Would you
+              like to add this to your existing notes for {cert.title}?
+            </ModalMessage>
+            <ModalButtons>
+              <ModalButton
+                $variant="outline"
+                onClick={() => {
+                  setShowAddToNotesModal(false);
+                  setGeneratedExplanation("");
+                  setCurrentTopic("");
+                }}
+              >
+                Cancel
+              </ModalButton>
+              <ModalButton $variant="primary" onClick={addToExistingNotes}>
+                <Plus size={14} /> Add to Notes
+              </ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
@@ -788,6 +1080,17 @@ export default function CourseDetailPage() {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <style jsx global>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </Container>
   );
 }
